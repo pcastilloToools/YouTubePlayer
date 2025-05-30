@@ -1,60 +1,49 @@
 <!DOCTYPE html>
-<html>
-  <body style="margin:0; background:black;">
-    <div id="player"></div>
+<html style="height:100%;">
+  <body style="margin:0; background:black; height:100%;">
+    <div id="player" style="width:100%; height:100%;"></div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
       var player;
-      var playerReady = false; // Esta variable puede ser útil si en el futuro quieres saber si el reproductor está listo.
+      var playerReady = false;
 
-      // Se llama automáticamente cuando la API de YouTube Iframe Player está lista.
       function onYouTubeIframeAPIReady() {
         console.log("onYouTubeIframeAPIReady: La API de YouTube está lista.");
 
         const params = new URLSearchParams(window.location.search);
-        // Obtiene el videoId de la URL (ej. ?videoId=E97ObCfj5fY).
-        // Si no hay videoId en la URL, usa "dQw4w9WgXcQ" (un video de Rick Astley) como predeterminado.
         const videoId = params.get("videoId") || "dQw4w9WgXcQ";
 
         player = new YT.Player('player', {
-          width: '100%',  // Ocupa todo el ancho disponible del div 'player'.
-          height: '100%', // Ocupa toda la altura disponible del div 'player'.
-          videoId: videoId, // El ID del video de YouTube a cargar.
+          width: '100%',
+          height: '100%',
+          videoId: videoId,
           playerVars: {
-            'controls': 0,        // '0' oculta los controles del reproductor (play/pause, barra de progreso, etc.).
-            'modestbranding': 1,  // '1' muestra el logo de YouTube de forma más discreta.
-            'autoplay': 0         // '0' evita que el video se reproduzca automáticamente al cargar.
+            'controls': 0,
+            'modestbranding': 1,
+            'autoplay': 0
           },
           events: {
-            'onReady': onPlayerReady,     // Llama a la función 'onPlayerReady' cuando el reproductor ha cargado.
-            'onError': onPlayerError      // Llama a la función 'onPlayerError' si ocurre un error.
+            'onReady': onPlayerReady,
+            'onError': onPlayerError
           }
         });
       }
 
-      // Esta función se llama cuando el reproductor de YouTube ha cargado y está listo para recibir comandos.
       function onPlayerReady(event) {
         console.log("onPlayerReady: ¡Reproductor de YouTube listo y en pausa!");
-        playerReady = true; // Establecemos la bandera a true.
-        // event.target.playVideo(); // Descomenta esta línea si quieres que el video se reproduzca automáticamente.
+        playerReady = true;
       }
 
-      // Esta función se llama si hay algún error con el reproductor de YouTube.
       function onPlayerError(event) {
         console.error("onPlayerError: Error del reproductor de YouTube. Código de error:", event.data);
       }
 
-      // Funciones para que Unity pueda controlar el video a través de JavaScript.
-      // Usan 'player?.' para asegurarse de que el objeto 'player' existe antes de intentar llamar al método.
-
-      // Función que Unity puede llamar para verificar si el reproductor está listo.
       function checkPlayerReady() {
         console.log("checkPlayerReady: Estado actual:", playerReady);
         return playerReady;
       }
 
-      // Función que Unity puede llamar para iniciar la reproducción del video.
       function playVideo() {
         if (player) {
           player.playVideo();
@@ -64,7 +53,6 @@
         }
       }
 
-      // Función que Unity puede llamar para pausar el video.
       function pauseVideo() {
         if (player) {
           player.pauseVideo();
@@ -74,11 +62,9 @@
         }
       }
 
-      // Función que Unity puede llamar para ir a un segundo específico del video.
-      // 't' es el tiempo en segundos.
       function seekTo(t) {
         if (player) {
-          player.seekTo(t, true); // El 'true' asegura que se reproduce después de buscar.
+          player.seekTo(t, true);
           console.log("Comando: Ir al segundo " + t + ".");
         } else {
           console.warn("Comando: Ir al segundo - Reproductor no disponible.");
