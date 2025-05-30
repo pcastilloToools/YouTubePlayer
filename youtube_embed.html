@@ -7,91 +7,50 @@
         // Estado global del reproductor
         var youtubePlayerStatus = {
             isReady: false,
-            currentTime: 0,
-            playerState: -1 // -1: no inicializado, 0: finalizado, 1: reproduciendo, 2: pausado, etc.
+            currentTime: 0
         };
 
         var player;
         var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api"; // ¡Usa HTTPS siempre que sea posible!
+        tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function onYouTubeIframeAPIReady() {
             var urlParams = new URLSearchParams(window.location.search);
-            var videoId = urlParams.get('videoId') || 'dQw4w9WgXcQ'; // Rick Astley por defecto
+            var videoId = urlParams.get('videoId') || 'dQw4w9WgXcQ';
 
             player = new YT.Player('player', {
                 height: '100%',
                 width: '100%',
                 videoId: videoId,
                 playerVars: {
-                    'controls': 0,          // Sin controles del reproductor
-                    'modestbranding': 1,    // Branding modesto
-                    'enablejsapi': 1,       // ¡ESENCIAL! Para la API de JS
-                    'origin': window.location.origin // Usa el origen actual para seguridad
+                    'controls': 0,
+                    'modestbranding': 1,
+                    'origin': window.location.origin // Usa el origen actual
                 },
                 events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange,
-                    'onError': onPlayerError
+                    'onReady': () => {
+                        youtubePlayerStatus.isReady = true; // Â¡IMPORTANTE!
+                        console.log("Reproductor listo!");
+                    },
+                    'onStateChange': (event) => {
+                        if (event.data === YT.PlayerState.PLAYING) {
+                            youtubePlayerStatus.currentTime = player.getCurrentTime();
+                        }
+                    }
                 }
             });
         }
 
-        function onPlayerReady(event) {
-            youtubePlayerStatus.isReady = true; // ¡IMPORTANTE!
-            console.log("Reproductor listo!");
-            // No necesitamos enviar un mensaje directo a Unity aquí, ya que Unity lo sondeará.
-            // Pero es buena práctica mantener este log para depuración.
-        }
-
-        function onPlayerStateChange(event) {
-            youtubePlayerStatus.playerState = event.data;
-            if (event.data === YT.PlayerState.PLAYING) {
-                // Actualiza el tiempo actual continuamente
-                youtubePlayerStatus.currentTime = player.getCurrentTime();
-            }
-            console.log("Estado del reproductor cambiado:", youtubePlayerStatus.playerState);
-        }
-
-        function onPlayerError(event) {
-            console.error("Error del reproductor de YouTube:", event.data);
-            youtubePlayerStatus.playerState = -2; // Un código para indicar error
-        }
-
-        // --- Funciones para que Unity pueda sondear el estado ---
-        // Estas funciones no son estrictamente necesarias si Unity escribe directamente en variables globales (como hicimos en C#)
-        // Pero son más limpias si quieres encapsular la lógica JS.
-        // Si usas estas, el JS que se ejecute con EvaluateJSForResult sería:
-        // "javascript: someResultVar = getPlayerReadyStatus();"
-
-        // function getPlayerReadyStatus() {
-        //     return youtubePlayerStatus.isReady.toString();
-        // }
-
-        // function getCurrentPlayerTime() {
-        //     if (player) {
-        //         return player.getCurrentTime().toString();
-        //     }
-        //     return "0";
-        // }
-
-        // function getPlayerState() {
-        //     if (player) {
-        //         return player.getPlayerState().toString();
-        //     }
-        //     return "-1";
-        // }
-
-        // Mantenemos estas funciones si te resultan útiles para otras llamadas directas de EvaluateJS
-        // pero para el sondeo en la Coroutine de C#, lo hacemos directamente sobre las variables globales.
         function playVideo() {
-            if (player && youtubePlayerStatus.isReady) {
-                player.playVideo();
-            }
+            if (player) player.playVideo();
+            return "Play command sent";
         }
-        // etc.
+
+        function checkPlayerReady() {
+            return youtubePlayerStatus.isReady.toString();
+        }
     </script>
 </body>
 </html>
