@@ -1,56 +1,29 @@
 <!DOCTYPE html>
 <html>
-<body style="margin:0; background:black;">
+  <body style="margin:0; background:black;">
     <div id="player"></div>
 
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // Estado global del reproductor
-        var youtubePlayerStatus = {
-            isReady: false,
-            currentTime: 0
-        };
+      var player;
 
-        var player;
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      function onYouTubeIframeAPIReady() {
+          const params = new URLSearchParams(window.location.search);
+          const videoId = params.get("videoId") || "dQw4w9WgXcQ";
+          player = new YT.Player('player', {
+              width: '100%',
+              height: '100%',
+              videoId: videoId,
+              playerVars: { 'controls': 0, 'modestbranding': 1 },
+              events: {
+                  'onReady': () => console.log("Listo")
+              }
+          });
+      }
 
-        function onYouTubeIframeAPIReady() {
-            var urlParams = new URLSearchParams(window.location.search);
-            var videoId = urlParams.get('videoId') || 'dQw4w9WgXcQ';
-
-            player = new YT.Player('player', {
-                height: '100%',
-                width: '100%',
-                videoId: videoId,
-                playerVars: {
-                    'controls': 0,
-                    'modestbranding': 1,
-                    'origin': window.location.origin // Usa el origen actual
-                },
-                events: {
-                    'onReady': () => {
-                        youtubePlayerStatus.isReady = true; // ¡IMPORTANTE!
-                        console.log("Reproductor listo!");
-                    },
-                    'onStateChange': (event) => {
-                        if (event.data === YT.PlayerState.PLAYING) {
-                            youtubePlayerStatus.currentTime = player.getCurrentTime();
-                        }
-                    }
-                }
-            });
-        }
-
-        function playVideo() {
-            if (player) player.playVideo();
-            return "Play command sent";
-        }
-
-        function checkPlayerReady() {
-            return youtubePlayerStatus.isReady.toString();
-        }
+      function playVideo() { player?.playVideo(); }
+      function pauseVideo() { player?.pauseVideo(); }
+      function seekTo(t) { player?.seekTo(t, true); }
     </script>
-</body>
+  </body>
 </html>
