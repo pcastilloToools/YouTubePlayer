@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html style="height:100%;">
   <body style="margin:0; background:black; height:100%;">
     <div id="player" style="width:100%; height:100%;"></div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
       var player;
-      var playerReady = false; // La bandera que Unity comprobará.
+      var playerReady = false;
 
-      // Se llama automáticamente cuando la API de YouTube Iframe Player está lista.
       function onYouTubeIframeAPIReady() {
-        console.log("JS Log: onYouTubeIframeAPIReady - La API de YouTube está lista.");
+        console.log("onYouTubeIframeAPIReady: La API de YouTube está lista.");
 
         const params = new URLSearchParams(window.location.search);
         const videoId = params.get("videoId") || "dQw4w9WgXcQ";
@@ -22,77 +21,53 @@
           playerVars: {
             'controls': 0,
             'modestbranding': 1,
-            'autoplay': 0, // Mantenemos en 0 para que Unity lo inicie.
-            'mute': 1      // Opcional: Mutear el video al inicio para evitar problemas de políticas de auto-reproducción en algunos WebViews.
+            'autoplay': 0
           },
           events: {
             'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange, // Añadimos esto para depurar el estado del reproductor.
             'onError': onPlayerError
           }
         });
       }
 
-      // Se llama cuando el reproductor ha cargado y está listo.
       function onPlayerReady(event) {
-        console.log("JS Log: onPlayerReady - ¡Reproductor de YouTube listo!");
-        playerReady = true; // Establecemos la bandera a true.
-        // Si quisieras que el video empezara muteado y luego desmutearlo desde Unity, lo harías aquí.
-        // event.target.mute(); // Si 'mute: 1' no funciona, descomenta esto.
+        console.log("onPlayerReady: ¡Reproductor de YouTube listo y en pausa!");
+        playerReady = true;
       }
 
-      // Se llama cada vez que el estado de reproducción cambia.
-      function onPlayerStateChange(event) {
-        // YT.PlayerState.PLAYING = 1
-        // YT.PlayerState.PAUSED = 2
-        // YT.PlayerState.ENDED = 0
-        console.log("JS Log: onPlayerStateChange - Nuevo estado:", event.data);
-      }
-
-      // Se llama si hay un error.
       function onPlayerError(event) {
-        console.error("JS Log: onPlayerError - Error del reproductor:", event.data);
+        console.error("onPlayerError: Error del reproductor de YouTube. Código de error:", event.data);
       }
-
-      // Funciones de control que Unity llamará:
 
       function checkPlayerReady() {
-        console.log("JS Log: checkPlayerReady() llamado por Unity. Estado: " + playerReady);
+        console.log("checkPlayerReady: Estado actual:", playerReady);
         return playerReady;
       }
 
       function playVideo() {
-        console.log("JS Log: playVideo() llamado por Unity.");
         if (player) {
           player.playVideo();
-          // Opcional: Si está muteado y quieres desmutear al hacer play.
-          // if (player.isMuted()) {
-          //   player.unMute();
-          //   console.log("JS Log: Video desmuteado.");
-          // }
-          console.log("JS Log: Intentando reproducir.");
+          console.log("Comando: Reproducir video.");
         } else {
-          console.warn("JS Log: playVideo() - Reproductor no disponible.");
+          console.warn("Comando: Reproducir video - Reproductor no disponible.");
         }
       }
 
       function pauseVideo() {
-        console.log("JS Log: pauseVideo() llamado por Unity.");
         if (player) {
           player.pauseVideo();
-          console.log("JS Log: Intentando pausar.");
+          console.log("Comando: Pausar video.");
         } else {
-          console.warn("JS Log: pauseVideo() - Reproductor no disponible.");
+          console.warn("Comando: Pausar video - Reproductor no disponible.");
         }
       }
 
       function seekTo(t) {
-        console.log("JS Log: seekTo(" + t + ") llamado por Unity.");
         if (player) {
-          player.seekTo(t, true); // true = reproducir después del seek.
-          console.log("JS Log: Intentando buscar a " + t + " segundos.");
+          player.seekTo(t, true);
+          console.log("Comando: Ir al segundo " + t + ".");
         } else {
-          console.warn("JS Log: seekTo() - Reproductor no disponible.");
+          console.warn("Comando: Ir al segundo - Reproductor no disponible.");
         }
       }
     </script>
