@@ -3,24 +3,32 @@
   <body style="margin:0; background:black;">
     <div id="player"></div>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://www.youtube.com/iframe_api"></script> 
     <script>
       var player;
+      var playerReady = false; // Puedes mantenerla si quieres la flexibilidad en el futuro
 
       function onYouTubeIframeAPIReady() {
           const params = new URLSearchParams(window.location.search);
-          const videoId = params.get("videoId") || "dQw4w9WgXcQ";
+          const videoId = params.get("videoId") || "dQw4w9WgXcQ"; // Usará "dQw4w9WgXcQ" si no se proporciona videoId
+
           player = new YT.Player('player', {
               width: '100%',
               height: '100%',
               videoId: videoId,
-              playerVars: { 'controls': 0, 'modestbranding': 1 },
+              playerVars: { 
+                  'controls': 0, 
+                  'modestbranding': 1,
+                  'autoplay': 0 // Asegúrate de que 'autoplay' sea 0 para que no se reproduzca
+              },
               events: {
-                  'onReady': () => console.log("Listo")
+                  'onReady': () => console.log("Reproductor listo y en pausa")
               }
           });
       }
 
+      // Funciones para control futuro si las necesitas, pero no se usarán si no llamas a PlayVideo()
+      function checkPlayerReady() { return playerReady; }
       function playVideo() { player?.playVideo(); }
       function pauseVideo() { player?.pauseVideo(); }
       function seekTo(t) { player?.seekTo(t, true); }
