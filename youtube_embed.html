@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>YT Player para Unity</title>
     <style>
         html, body {
             margin: 0;
             padding: 0;
             background-color: black;
-            overflow: hidden;
             height: 100%;
             width: 100%;
+            overflow: hidden;
         }
         #player {
             position: absolute;
@@ -21,90 +21,85 @@
     </style>
 </head>
 <body>
-
     <div id="player"></div>
 
     <script>
-        // Inicializa el objeto que Unity puede consultar
-        window._unityCom = {
-            lastStatus: null,
-            onPlayerReady: function() {
-                console.log("Unity puede ser notificado aquí si el plugin lo permite.");
-                // Ejemplo si puedes hacer callbacks: unityInstance.SendMessage(...)
-            }
-        };
-
         var player;
         var playerReady = false;
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                videoId: 'dQw4w9WgXcQ', // Reemplaza por tu ID real
+                videoId: 'M7lc1UVf-VE', // <-- tu video de prueba
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                },
                 playerVars: {
                     'autoplay': 0,
                     'controls': 1,
                     'rel': 0,
-                    'modestbranding': 1
-                },
-                events: {
-                    'onReady': function (event) {
-                        playerReady = true;
-                        console.log("Reproductor listo");
-                        if (window._unityCom && window._unityCom.onPlayerReady) {
-                            window._unityCom.onPlayerReady();
-                        }
-                    },
-                    'onStateChange': function (event) {
-                        console.log("Estado del reproductor:", event.data);
-                    }
+                    'showinfo': 0
                 }
             });
         }
 
-        function updateUnityStatus() {
-            console.log("updateUnityStatus llamada desde Unity.");
-            if (window._unityCom && player) {
-                try {
-                    var status = {
-                        ready: playerReady,
-                        state: player.getPlayerState(),
-                        time: player.getCurrentTime(),
-                        timestamp: Date.now()
-                    };
-                    window._unityCom.lastStatus = status;
-                    return JSON.stringify(status);
-                } catch(e) {
-                    console.error("Error en updateUnityStatus:", e);
-                    return "ERROR:" + e.message;
-                }
+        function onPlayerReady(event) {
+            playerReady = true;
+            console.log("✅ Player listo");
+
+            if (window._unityCom) {
+                window._unityCom.ytCargado = true;
+                Unity.call("YT_READY");
+            } else if (window.Unity) {
+                Unity.call("YT_READY");
             }
-            return "NOT_READY";
+        }
+
+        function onPlayerStateChange(event) {
+            if (window.Unity) {
+                Unity.call("YT_STATE:" + event.data);
+            }
         }
 
         function playVideo() {
             if (player && player.playVideo) {
                 player.playVideo();
-                console.log("Reproduciendo video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para reproducir.");
+                console.log("▶️ Reproduciendo video");
             }
         }
 
         function pauseVideo() {
             if (player && player.pauseVideo) {
                 player.pauseVideo();
-                console.log("Pausando video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para pausar.");
+                console.log("⏸️ Pausando video");
             }
         }
 
-        // Cargar la API de IFrame de YouTube
+        function updateUnityStatus() {
+            if (player && playerReady) {
+                var status = {
+                    ready: true,
+                    state: player.getPlayerState(),
+                    time: player.getCurrentTime(),
+                    timestamp: Date.now()
+                };
+                return JSON.stringify(status);
+            }
+            return JSON.stringify({ ready: false });
+        }
+
+        // Reenviar logs a Unity
+        console.log = (function(origLogFunc) {
+            return function(msg) {
+                origLogFunc(msg);
+                if (window.Unity) Unity.call("JS_LOG: " + msg);
+            };
+        })(console.log);
+
+        // Cargar API de YouTube
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        document.head.appendChild(tag);
     </script>
-
 </body>
 </html>
