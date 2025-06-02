@@ -137,6 +137,21 @@
         }
         return "NOT_READY"; // Si _unityCom o player no están listos
     }
+
+      function playVideo() {
+    if (player && player.playVideo) {
+        player.playVideo();
+        console.log("Reproduciendo video desde función JS");
+    }
+}
+
+function pauseVideo() {
+    if (player && player.pauseVideo) {
+        player.pauseVideo();
+        console.log("Pausando video desde función JS");
+    }
+}
+
     </script>
   </body>
 </html>
