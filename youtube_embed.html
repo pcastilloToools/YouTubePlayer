@@ -1,54 +1,142 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>YouTube Player</title>
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <script>
-    var player;
+<html style="height:100%;">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YouTube Player for Unity WebView</title>
+    <script>
+    // Objeto de comunicación entre JavaScript y Unity
+    console.log("Script _unityCom cargando...");
+    if (!window._unityCom) {
+        window._unityCom = {
+            lastCall: 0,
+            callbacks: {},
+            // Función para notificar a Unity
+            notify: function(event, data) {
+                try {
+                    var message = event + (data ? ':' + data : '');
+                    // Asegúrate de que window.unityWebView y unityWebView.notify existan
+                    // Unity inyectará 'unityWebView' con el método 'notify' (o 'OnMessageFromJS' si usas AddJavascriptInterface)
+                    if (window.unityWebView && unityWebView.notify) {
+                        unityWebView.notify(message);
+                    } else if (window.UnityApp && UnityApp.OnMessageFromJS) { // Alternativa si usas "UnityApp" y OnMessageFromJS en Unity
+                        UnityApp.OnMessageFromJS(message);
+                    } else {
+                        console.warn("unityWebView.notify o UnityApp.OnMessageFromJS no disponible.");
+                    }
+                } catch(e) {
+                    console.error("Error en _unityCom.notify:", e);
+                }
+            },
+            // Función para manejar llamadas desde Unity (por ejemplo, para obtener el estado)
+            handleCommand: function(cmd) {
+                try {
+                    var response = "NOT_IMPLEMENTED";
+                    
+                    if (cmd === 'getStatus') {
+                        response = JSON.stringify({
+                            ready: !!window.playerReady,
+                            state: window.player ? player.getPlayerState() : -1,
+                            time: window.player ? player.getCurrentTime() : 0,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    window._unityCom.lastResponse = response; // Guardar la última respuesta para que Unity la lea
+                    return response;
+                } catch(e) {
+                    console.error("Error en _unityCom.handleCommand:", e);
+                    return "ERROR:" + e.message;
+                }
+            }
+        };
+        console.log("_unityCom inicializado.");
+    } else {
+        console.log("_unityCom ya existe.");
+    }
+    </script>
+    <script src="https://www.youtube.com/iframe_api"></script> 
+  </head>
+  <body style="margin:0; background:black; height:100%; overflow:hidden;">
+    <div id="player" style="width:100%; height:100%;"></div>
+
+    <script>
+    console.log("Script del reproductor cargando...");
+    // Variables del reproductor
+    var player = null;
     var playerReady = false;
-
+    
+    // Esta función es llamada automáticamente por la API de YouTube cuando está lista
     function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        videoId: 'VIDEO_ID',
-        events: {
-          'onReady': function(event) {
-            playerReady = true;
-            if (window.unityCom && unityCom.notify) {
-              unityCom.notify('PLAYER_READY');
+        console.log("onYouTubeIframeAPIReady llamada. La API de YouTube está lista.");
+        
+        try {
+            // ** ¡AQUÍ ESTÁ LA URL DE TU GITHUB PAGES ESPECÍFICA! **
+            var youtubeOrigin = 'https://pedropracticas3o.github.io'; 
+            
+            console.log("Intentando crear reproductor YT. Origin que se usará:", youtubeOrigin);
+            
+            player = new YT.Player('player', {
+                videoId: 'dQw4w9WgXcQ', // ID de video de ejemplo (Rick Astley). ¡Cámbialo si necesitas otro!
+                playerVars: {
+                    'playsinline': 1,
+                    'enablejsapi': 1,
+                    'controls': 0, // Sin controles del reproductor de YouTube
+                    'autoplay': 0, // No iniciar automáticamente
+                    'origin': youtubeOrigin // Parámetro de seguridad crucial
+                },
+                events: {
+                    'onReady': function(event) {
+                        console.log("Evento onReady del reproductor de YouTube. Reproductor cargado y listo.");
+                        playerReady = true;
+                        if (window._unityCom) {
+                            window._unityCom.notify('PLAYER_READY');
+                        } else {
+                            console.error("Error: _unityCom no definido al intentar PLAYER_READY.");
+                        }
+                    },
+                    'onStateChange': function(event) {
+                        console.log("Evento onStateChange:", event.data);
+                        if (window._unityCom) {
+                            window._unityCom.notify('STATE_CHANGE', event.data);
+                        }
+                    },
+                    'onError': function(event) {
+                        console.error("Evento onError del reproductor de YouTube:", event.data);
+                        if (window._unityCom) {
+                            window._unityCom.notify('PLAYER_ERROR', event.data);
+                        }
+                    }
+                }
+            });
+        } catch(e) {
+            console.error("Error al crear reproductor YT en try-catch:", e);
+            if (window._unityCom) {
+                window._unityCom.notify('INIT_ERROR', e.message);
             }
-          },
-          'onStateChange': function(event) {
-            if (window.unityCom && unityCom.notify) {
-              unityCom.notify('STATE_CHANGE:' + event.data);
+        }
+    }
+    
+    // Función que Unity puede llamar para obtener el estado del reproductor
+    function updateUnityStatus() {
+        console.log("updateUnityStatus llamada desde Unity.");
+        if (window._unityCom && player) {
+            try {
+                var status = {
+                    ready: playerReady,
+                    state: player.getPlayerState(),
+                    time: player.getCurrentTime(),
+                    timestamp: Date.now()
+                };
+                window._unityCom.lastStatus = status; // Guardar el último estado para que Unity lo lea
+                return JSON.stringify(status);
+            } catch(e) {
+                console.error("Error en updateUnityStatus:", e);
+                return "ERROR:" + e.message;
             }
-          }
         }
-      });
+        return "NOT_READY"; // Si _unityCom o player no están listos
     }
-
-    window.unityCom = {
-      notify: function(msg) {
-        if (window.unityWebView && unityWebView.notify) {
-          unityWebView.notify(msg);
-        }
-      }
-    };
-
-    function playVideo() {
-      if (player && player.playVideo) {
-        player.playVideo();
-      }
-    }
-
-    function pauseVideo() {
-      if (player && player.pauseVideo) {
-        player.pauseVideo();
-      }
-    }
-  </script>
-</head>
-<body>
-  <div id="player"></div>
-</body>
+    </script>
+  </body>
 </html>
