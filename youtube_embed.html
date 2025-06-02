@@ -1,74 +1,145 @@
 <script>
-    var player;
-    var playerReady = false;
-    window.checkPlayerReadyResult = false; // ✅ Asegura que esté global
 
-    function onYouTubeIframeAPIReady() {
-        console.log("onYouTubeIframeAPIReady: La API de YouTube está lista.");
+  var player;
 
-        const params = new URLSearchParams(window.location.search);
-        const videoId = params.get("videoId") || "dQw4w9WgXcQ";
+  var playerReady = false;
 
-        player = new YT.Player('player', {
-            width: '100%',
-            height: '100%',
-            videoId: videoId,
-            playerVars: {
-                'controls': 0,
-                'modestbranding': 1,
-                'autoplay': 0
-            },
-            events: {
-                'onReady': onPlayerReady,
-                'onError': onPlayerError
-            }
-        });
-    }
+  window.checkPlayerReadyResult = false; // ✅ Asegura que esté global
 
-    function onPlayerReady(event) {
-        console.log("onPlayerReady: ¡Reproductor de YouTube listo y en pausa!");
-        playerReady = true;
-        updateCheckPlayerReadyResult(); // Llama a la actualización aquí para que se establezca tan pronto como esté listo
-    }
 
-    function onPlayerError(event) {
-        console.error("onPlayerError: Error del reproductor de YouTube. Código de error:", event.data);
-    }
 
-    function checkPlayerReady() {
-        console.log("checkPlayerReady: Estado actual:", playerReady);
-        return playerReady;
-    }
+  function onYouTubeIframeAPIReady() {
 
-    function updateCheckPlayerReadyResult() {
-        window.checkPlayerReadyResult = checkPlayerReady(); // Asigna el valor retornado por checkPlayerReady()
-        console.log("JS: checkPlayerReadyResult actualizado a:", window.checkPlayerReadyResult);
-    }
+    console.log("onYouTubeIframeAPIReady: La API de YouTube está lista.");
 
-    function playVideo() {
-        if (player) {
-            player.playVideo();
-            console.log("Comando: Reproducir video.");
-        } else {
-            console.warn("Comando: Reproducir video - Reproductor no disponible.");
-        }
-    }
 
-    function pauseVideo() {
-        if (player) {
-            player.pauseVideo();
-            console.log("Comando: Pausar video.");
-        } else {
-            console.warn("Comando: Pausar video - Reproductor no disponible.");
-        }
-    }
 
-    function seekTo(t) {
-        if (player) {
-            player.seekTo(t, true);
-            console.log("Comando: Ir al segundo " + t + ".");
-        } else {
-            console.warn("Comando: Ir al segundo - Reproductor no disponible.");
-        }
-    }
+    const params = new URLSearchParams(window.location.search);
+
+    const videoId = params.get("videoId") || "dQw4w9WgXcQ";
+
+
+
+    player = new YT.Player('player', {
+
+      width: '100%',
+
+      height: '100%',
+
+      videoId: videoId,
+
+      playerVars: {
+
+        'controls': 0,
+
+        'modestbranding': 1,
+
+        'autoplay': 0
+
+      },
+
+      events: {
+
+        'onReady': onPlayerReady,
+
+        'onError': onPlayerError
+
+      }
+
+    });
+
+  }
+
+
+
+  function onPlayerReady(event) {
+
+    console.log("onPlayerReady: ¡Reproductor de YouTube listo y en pausa!");
+
+    playerReady = true;
+
+  }
+
+
+
+  function onPlayerError(event) {
+
+    console.error("onPlayerError: Error del reproductor de YouTube. Código de error:", event.data);
+
+  }
+
+
+
+  function checkPlayerReady() {
+
+    console.log("checkPlayerReady: Estado actual:", playerReady);
+
+    return playerReady;
+
+  }
+
+
+
+  function updateCheckPlayerReadyResult() {
+
+    window.checkPlayerReadyResult = checkPlayerReady();
+
+    console.log("JS: checkPlayerReadyResult actualizado a:", window.checkPlayerReadyResult); // ✅ Log extra
+
+  }
+
+
+
+  function playVideo() {
+
+    if (player) {
+
+      player.playVideo();
+
+      console.log("Comando: Reproducir video.");
+
+    } else {
+
+      console.warn("Comando: Reproducir video - Reproductor no disponible.");
+
+    }
+
+  }
+
+
+
+  function pauseVideo() {
+
+    if (player) {
+
+      player.pauseVideo();
+
+      console.log("Comando: Pausar video.");
+
+    } else {
+
+      console.warn("Comando: Pausar video - Reproductor no disponible.");
+
+    }
+
+  }
+
+
+
+  function seekTo(t) {
+
+    if (player) {
+
+      player.seekTo(t, true);
+
+      console.log("Comando: Ir al segundo " + t + ".");
+
+    } else {
+
+      console.warn("Comando: Ir al segundo - Reproductor no disponible.");
+
+    }
+
+  }
+
 </script>
