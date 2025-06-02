@@ -1,105 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>YT Player para Unity</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            background-color: black;
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
+  <meta charset="UTF-8">
+  <title>YouTube Player</title>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    var player;
+    var playerReady = false;
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        videoId: 'VIDEO_ID',
+        events: {
+          'onReady': function(event) {
+            playerReady = true;
+            if (window.unityCom && unityCom.notify) {
+              unityCom.notify('PLAYER_READY');
+            }
+          },
+          'onStateChange': function(event) {
+            if (window.unityCom && unityCom.notify) {
+              unityCom.notify('STATE_CHANGE:' + event.data);
+            }
+          }
         }
-        #player {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%;
-            height: 100%;
+      });
+    }
+
+    window.unityCom = {
+      notify: function(msg) {
+        if (window.unityWebView && unityWebView.notify) {
+          unityWebView.notify(msg);
         }
-    </style>
+      }
+    };
+
+    function playVideo() {
+      if (player && player.playVideo) {
+        player.playVideo();
+      }
+    }
+
+    function pauseVideo() {
+      if (player && player.pauseVideo) {
+        player.pauseVideo();
+      }
+    }
+  </script>
 </head>
 <body>
-    <div id="player"></div>
-
-    <script>
-        var player;
-        var playerReady = false;
-
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('player', {
-                videoId: 'M7lc1UVf-VE', // <-- tu video de prueba
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
-                },
-                playerVars: {
-                    'autoplay': 0,
-                    'controls': 1,
-                    'rel': 0,
-                    'showinfo': 0
-                }
-            });
-        }
-
-        function onPlayerReady(event) {
-            playerReady = true;
-            console.log("✅ Player listo");
-
-            if (window._unityCom) {
-                window._unityCom.ytCargado = true;
-                Unity.call("YT_READY");
-            } else if (window.Unity) {
-                Unity.call("YT_READY");
-            }
-        }
-
-        function onPlayerStateChange(event) {
-            if (window.Unity) {
-                Unity.call("YT_STATE:" + event.data);
-            }
-        }
-
-        function playVideo() {
-            if (player && player.playVideo) {
-                player.playVideo();
-                console.log("▶️ Reproduciendo video");
-            }
-        }
-
-        function pauseVideo() {
-            if (player && player.pauseVideo) {
-                player.pauseVideo();
-                console.log("⏸️ Pausando video");
-            }
-        }
-
-        function updateUnityStatus() {
-            if (player && playerReady) {
-                var status = {
-                    ready: true,
-                    state: player.getPlayerState(),
-                    time: player.getCurrentTime(),
-                    timestamp: Date.now()
-                };
-                return JSON.stringify(status);
-            }
-            return JSON.stringify({ ready: false });
-        }
-
-        // Reenviar logs a Unity
-        console.log = (function(origLogFunc) {
-            return function(msg) {
-                origLogFunc(msg);
-                if (window.Unity) Unity.call("JS_LOG: " + msg);
-            };
-        })(console.log);
-
-        // Cargar API de YouTube
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
-    </script>
+  <div id="player"></div>
 </body>
 </html>
