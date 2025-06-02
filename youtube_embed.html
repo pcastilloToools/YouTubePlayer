@@ -10,16 +10,22 @@
             lastCall: 0,
             callbacks: {},
             // Función para notificar a Unity
-            notify: function(event, data) {
-                try {
-                    var message = event + (data ? ':' + data : '');
-                    if (window.unityWebView && unityWebView.notify) {
-                        unityWebView.notify(message);
-                    }
-                } catch(e) {
-                    console.error("Error en _unityCom.notify:", e);
-                }
-            },
+            // Dentro de tu HTML, en la sección de _unityCom:
+// Función para notificar a Unity
+notify: function(event, data) {
+    try {
+        var message = event + (data ? ':' + data : '');
+        // Asegúrate de que unityWebView y unityWebView.notify existan.
+        // Esto es lo que TLab.WebView expone para comunicarse con Unity.
+        if (window.unityWebView && unityWebView.notify) {
+            unityWebView.notify(message);
+        } else {
+            console.warn("UnityWebView not available to send message:", message);
+        }
+    } catch(e) {
+        console.error("Error en _unityCom.notify:", e);
+    }
+},
             // Función para manejar llamadas desde Unity
             handleCommand: function(cmd) {
                 try {
