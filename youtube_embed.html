@@ -30,6 +30,11 @@
         });
       }
 
+      function updateCheckPlayerReadyResult() {
+         window.checkPlayerReadyResult = checkPlayerReady();
+      }
+
+
       function onPlayerReady(event) {
         console.log("onPlayerReady: ¡Reproductor de YouTube listo y en pausa!");
         playerReady = true;
