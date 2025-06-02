@@ -1,8 +1,7 @@
 <script>
     var player;
     var playerReady = false;
-    // Remueve window.checkPlayerReadyResult si vas a usar un callback.
-    // window.checkPlayerReadyResult = false; // Ya no es necesario si usas el callback
+    window.checkPlayerReadyResult = false; // ✅ Asegura que esté global
 
     function onYouTubeIframeAPIReady() {
         console.log("onYouTubeIframeAPIReady: La API de YouTube está lista.");
@@ -29,24 +28,22 @@
     function onPlayerReady(event) {
         console.log("onPlayerReady: ¡Reproductor de YouTube listo y en pausa!");
         playerReady = true;
-
-        // **NUEVO: Llama a una función en Unity para notificar que el reproductor está listo**
-        // Envía un mensaje con el valor "true"
-        if (window.unityWebView) { // TLab WebView puede exponer un objeto global para esto
-            window.unityWebView.postMessage('PlayerReady', 'true');
-            console.log("JS: Mensaje 'PlayerReady: true' enviado a Unity.");
-        } else {
-            console.warn("JS: window.unityWebView no está disponible para enviar el mensaje a Unity.");
-        }
+        updateCheckPlayerReadyResult(); // Llama a la actualización aquí para que se establezca tan pronto como esté listo
     }
 
     function onPlayerError(event) {
         console.error("onPlayerError: Error del reproductor de YouTube. Código de error:", event.data);
     }
 
-    // Estas funciones ya no serían necesarias si usas el callback para la inicialización
-    // function checkPlayerReady() { /* ... */ }
-    // function updateCheckPlayerReadyResult() { /* ... */ }
+    function checkPlayerReady() {
+        console.log("checkPlayerReady: Estado actual:", playerReady);
+        return playerReady;
+    }
+
+    function updateCheckPlayerReadyResult() {
+        window.checkPlayerReadyResult = checkPlayerReady(); // Asigna el valor retornado por checkPlayerReady()
+        console.log("JS: checkPlayerReadyResult actualizado a:", window.checkPlayerReadyResult);
+    }
 
     function playVideo() {
         if (player) {
