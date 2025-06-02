@@ -25,85 +25,122 @@
     <div id="player"></div>
 
     <script>
-        // Inicializa el objeto que Unity puede consultar
-        window._unityCom = {
-            lastStatus: null,
-            onPlayerReady: function() {
-                console.log("Unity puede ser notificado aquí si el plugin lo permite.");
-                // Ejemplo si puedes hacer callbacks: unityInstance.SendMessage(...)
+        // Función para enviar mensajes a Unity
+        // Este bridge se inyecta desde Unity C# para asegurar su existencia y funcionalidad
+        function sendMessageToUnity(message) {
+            if (window.unityBridge && window.unityBridge.notify) {
+                window.unityBridge.notify(message);
+            } else {
+                console.warn("UnityBridge no está disponible para enviar el mensaje:", message);
             }
-        };
+        }
 
         var player;
         var playerReady = false;
 
+        // Esta función se llama automáticamente cuando la API de IFrame de YouTube está lista.
         function onYouTubeIframeAPIReady() {
+            console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
             player = new YT.Player('player', {
                 videoId: 'dQw4w9WgXcQ', // Reemplaza por tu ID real
                 playerVars: {
                     'autoplay': 0,
                     'controls': 1,
                     'rel': 0,
-                    'modestbranding': 1
+                    'modestbranding': 1,
+                    'playsinline': 1 // Importante para iOS
                 },
                 events: {
                     'onReady': function (event) {
                         playerReady = true;
                         console.log("Reproductor listo");
-                        if (window._unityCom && window._unityCom.onPlayerReady) {
-                            window._unityCom.onPlayerReady();
-                        }
+                        // Notificar a Unity que el reproductor está listo
+                        sendMessageToUnity("PLAYER_READY");
                     },
                     'onStateChange': function (event) {
                         console.log("Estado del reproductor:", event.data);
+                        // Notificar a Unity sobre cambios de estado
+                        sendMessageToUnity("PLAYER_STATE_CHANGE:" + event.data);
+                    },
+                    'onError': function (event) {
+                        console.error("Error del reproductor de YouTube:", event.data);
+                        sendMessageToUnity("PLAYER_ERROR:" + event.data);
                     }
                 }
             });
         }
 
-        function updateUnityStatus() {
-            console.log("updateUnityStatus llamada desde Unity.");
-            if (window._unityCom && player) {
-                try {
-                    var status = {
-                        ready: playerReady,
-                        state: player.getPlayerState(),
-                        time: player.getCurrentTime(),
-                        timestamp: Date.now()
-                    };
-                    window._unityCom.lastStatus = status;
-                    return JSON.stringify(status);
-                } catch(e) {
-                    console.error("Error en updateUnityStatus:", e);
-                    return "ERROR:" + e.message;
-                }
-            }
-            return "NOT_READY";
-        }
-
+        // Funciones que Unity puede llamar para controlar el reproductor
         function playVideo() {
-            if (player && player.playVideo) {
+            if (player && playerReady && player.playVideo) {
                 player.playVideo();
                 console.log("Reproduciendo video desde función JS");
             } else {
                 console.warn("Reproductor no listo para reproducir.");
+                sendMessageToUnity("PLAY_FAILED:Player not ready");
             }
         }
 
         function pauseVideo() {
-            if (player && player.pauseVideo) {
+            if (player && playerReady && player.pauseVideo) {
                 player.pauseVideo();
                 console.log("Pausando video desde función JS");
             } else {
                 console.warn("Reproductor no listo para pausar.");
+                sendMessageToUnity("PAUSE_FAILED:Player not ready");
             }
+        }
+
+        function stopVideo() {
+            if (player && playerReady && player.stopVideo) {
+                player.stopVideo();
+                console.log("Deteniendo video desde función JS");
+            } else {
+                console.warn("Reproductor no listo para detener.");
+                sendMessageToUnity("STOP_FAILED:Player not ready");
+            }
+        }
+
+        function seekTo(seconds, allowSeekAhead) {
+            if (player && playerReady && player.seekTo) {
+                player.seekTo(seconds, allowSeekAhead);
+                console.log("Saltando a " + seconds + " segundos.");
+            } else {
+                console.warn("Reproductor no listo para saltar.");
+                sendMessageToUnity("SEEK_FAILED:Player not ready");
+            }
+        }
+
+        function setVolume(volume) { // volume de 0 a 100
+            if (player && playerReady && player.setVolume) {
+                player.setVolume(volume);
+                console.log("Volumen establecido a: " + volume);
+            } else {
+                console.warn("Reproductor no listo para ajustar volumen.");
+            }
+        }
+
+        function getPlayerState() {
+            if (player && playerReady && player.getPlayerState) {
+                return player.getPlayerState();
+            }
+            return -1; // Estado desconocido
+        }
+
+        function getCurrentTime() {
+            if (player && playerReady && player.getCurrentTime) {
+                return player.getCurrentTime();
+            }
+            return 0;
         }
 
         // Cargar la API de IFrame de YouTube
         var tag = document.createElement('script');
+        // ¡¡CORRECCIÓN CRÍTICA AQUÍ!!
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
     </script>
 
 </body>
