@@ -1,120 +1,109 @@
 <!DOCTYPE html>
 <html style="height:100%;">
-  <body style="margin:0; background:black; height:100%;">
-    <div id="player" style="width:100%; height:100%;"></div>
-
-    <script src="https://www.youtube.com/iframe_api"></script>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script>
-    // Variables globales con verificación de existencia
-    window.player = null;
-    window.playerReady = false;
-    
-    // Sistema de comunicación mejorado
-    if (!window.unityCom) {
-        window.unityCom = {
+    // Verificar si el objeto de comunicación ya existe
+    if (!window._unityCom) {
+        window._unityCom = {
+            lastCall: 0,
             callbacks: {},
-            notify: function(msg) {
+            // Función para notificar a Unity
+            notify: function(event, data) {
                 try {
+                    var message = event + (data ? ':' + data : '');
                     if (window.unityWebView && unityWebView.notify) {
-                        unityWebView.notify(msg);
+                        unityWebView.notify(message);
                     }
                 } catch(e) {
-                    console.error("Error en unityCom.notify:", e);
+                    console.error("Error en _unityCom.notify:", e);
+                }
+            },
+            // Función para manejar llamadas desde Unity
+            handleCommand: function(cmd) {
+                try {
+                    var response = "NOT_IMPLEMENTED";
+                    
+                    if (cmd === 'getStatus') {
+                        response = JSON.stringify({
+                            ready: !!window.playerReady,
+                            state: window.player ? player.getPlayerState() : -1,
+                            time: window.player ? player.getCurrentTime() : 0,
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    window._unityCom.lastResponse = response;
+                    return response;
+                } catch(e) {
+                    return "ERROR:" + e.message;
                 }
             }
         };
     }
+    </script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+  </head>
+  <body style="margin:0; background:black; height:100%;">
+    <div id="player" style="width:100%; height:100%;"></div>
 
+    <script>
+    // Variables del reproductor
+    var player = null;
+    var playerReady = false;
+    
     function onYouTubeIframeAPIReady() {
-        console.log("YouTube API lista - Inicializando reproductor...");
+        console.log("YouTube API lista");
         
         try {
             player = new YT.Player('player', {
                 videoId: 'dQw4w9WgXcQ',
                 playerVars: {
-                    'controls': 0,
+                    'playsinline': 1,
                     'enablejsapi': 1,
+                    'controls': 0,
                     'autoplay': 0,
                     'origin': window.location.origin
                 },
                 events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange,
-                    'onError': onPlayerError
+                    'onReady': function(event) {
+                        console.log("Reproductor listo");
+                        playerReady = true;
+                        window._unityCom.notify('PLAYER_READY');
+                    },
+                    'onStateChange': function(event) {
+                        window._unityCom.notify('STATE_CHANGE', event.data);
+                    },
+                    'onError': function(event) {
+                        window._unityCom.notify('PLAYER_ERROR', event.data);
+                    }
                 }
             });
         } catch(e) {
             console.error("Error al crear reproductor:", e);
-            unityCom.notify("ERROR:" + e.message);
+            window._unityCom.notify('INIT_ERROR', e.message);
         }
     }
-
-    function onPlayerReady(event) {
-        console.log("Reproductor listo!");
-        window.playerReady = true;
-        
-        // Notificar a Unity
-        unityCom.notify("PLAYER_READY");
-        
-        // Actualizar estado inicial
-        updateUnityStatus();
-    }
-
-    function onPlayerStateChange(event) {
-        updateUnityStatus();
-    }
-
-    function onPlayerError(event) {
-        console.error("Error en reproductor:", event.data);
-        unityCom.notify("PLAYER_ERROR:" + event.data);
-    }
-
+    
+    // Función para Unity
     function updateUnityStatus() {
-        try {
-            var status = {
-                ready: window.playerReady,
-                state: player ? player.getPlayerState() : -1,
-                time: player ? player.getCurrentTime() : 0,
-                duration: player ? player.getDuration() : 0
-            };
-            
-            if (window.unityCom) {
-                window.unityCom.lastStatus = status;
+        if (window._unityCom && player) {
+            try {
+                var status = {
+                    ready: playerReady,
+                    state: player.getPlayerState(),
+                    time: player.getCurrentTime(),
+                    timestamp: Date.now()
+                };
+                window._unityCom.lastStatus = status;
+                return JSON.stringify(status);
+            } catch(e) {
+                console.error("Error en updateUnityStatus:", e);
+                return "ERROR:" + e.message;
             }
-            
-            // Notificar a Unity si hay cambios importantes
-            if (status.state === YT.PlayerState.PLAYING) {
-                unityCom.notify("PLAYING:" + status.time);
-            }
-        } catch(e) {
-            console.error("Error en updateUnityStatus:", e);
         }
-    }
-
-    // Función para llamadas desde Unity
-    function handleUnityCommand(cmd) {
-        try {
-            if (!player) return "PLAYER_NOT_READY";
-            
-            switch(cmd) {
-                case 'play':
-                    player.playVideo();
-                    return "PLAYING";
-                case 'pause':
-                    player.pauseVideo();
-                    return "PAUSED";
-                case 'status':
-                    return JSON.stringify({
-                        ready: playerReady,
-                        state: player.getPlayerState(),
-                        time: player.getCurrentTime()
-                    });
-                default:
-                    return "UNKNOWN_COMMAND";
-            }
-        } catch(e) {
-            return "ERROR:" + e.message;
-        }
+        return "NOT_READY";
     }
     </script>
   </body>
