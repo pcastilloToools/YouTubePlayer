@@ -5,15 +5,20 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
+    // Variables globales para el estado del reproductor
     var player;
     var playerReady = false;
-    window.checkPlayerReadyResult = false; // ✅ Asegura que esté global
+    window.unityPlayerStatus = {
+        ready: false,
+        lastUpdate: new Date().getTime(),
+        currentState: -1 // -1: no inicializado, 0: terminado, 1: reproduciendo, 2: pausado
+    };
 
     function onYouTubeIframeAPIReady() {
-        console.log("onYouTubeIframeAPIReady: La API de YouTube está lista.");
-
+        console.log("JS: YouTube API lista. Inicializando reproductor...");
+        
         const params = new URLSearchParams(window.location.search);
-        const videoId = params.get("videoId") || "dQw4w9WgXcQ";
+        const videoId = params.get("videoId") || "dQw4w9WgXcQ"; // ID de video por defecto
 
         player = new YT.Player('player', {
             width: '100%',
@@ -22,61 +27,89 @@
             playerVars: {
                 'controls': 0,
                 'modestbranding': 1,
-                'autoplay': 0
+                'autoplay': 0,
+                'enablejsapi': 1 // IMPORTANTE: Habilita la API JS
             },
             events: {
                 'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange,
                 'onError': onPlayerError
             }
         });
     }
 
     function onPlayerReady(event) {
-        console.log("onPlayerReady: ¡Reproductor de YouTube listo y en pausa!");
+        console.log("JS: Reproductor listo!");
         playerReady = true;
-        updateCheckPlayerReadyResult(); // Llama a la actualización aquí para que se establezca tan pronto como esté listo
+        updateUnityStatus();
+        
+        // Notificar a Unity si es posible
+        try {
+            if (typeof unityObject !== 'undefined') {
+                unityObject.sendMessage('OnYouTubePlayerReady');
+            }
+        } catch(e) { console.log("JS: Unity bridge no disponible"); }
+    }
+
+    function onPlayerStateChange(event) {
+        console.log("JS: Estado cambiado:", event.data);
+        updateUnityStatus();
     }
 
     function onPlayerError(event) {
-        console.error("onPlayerError: Error del reproductor de YouTube. Código de error:", event.data);
+        console.error("JS: Error en reproductor:", event.data);
+        window.unityPlayerStatus.error = event.data;
     }
 
-    function checkPlayerReady() {
-        console.log("checkPlayerReady: Estado actual:", playerReady);
-        return playerReady;
+    function updateUnityStatus() {
+        if (!player) return;
+        
+        window.unityPlayerStatus = {
+            ready: playerReady,
+            lastUpdate: new Date().getTime(),
+            currentState: player.getPlayerState(),
+            currentTime: player.getCurrentTime(),
+            duration: player.getDuration()
+        };
+        console.log("JS: Estado actualizado para Unity:", window.unityPlayerStatus);
     }
 
-    function updateCheckPlayerReadyResult() {
-        window.checkPlayerReadyResult = checkPlayerReady(); // Asigna el valor retornado por checkPlayerReady()
-        console.log("JS: checkPlayerReadyResult actualizado a:", window.checkPlayerReadyResult);
-    }
-
+    // Funciones de control EXPORTADAS
     function playVideo() {
-        if (player) {
+        console.log("JS: Recibido comando PLAY");
+        if (player && player.playVideo) {
             player.playVideo();
-            console.log("Comando: Reproducir video.");
+            updateUnityStatus();
         } else {
-            console.warn("Comando: Reproducir video - Reproductor no disponible.");
+            console.warn("JS: playVideo - Reproductor no disponible");
         }
     }
 
     function pauseVideo() {
-        if (player) {
+        console.log("JS: Recibido comando PAUSE");
+        if (player && player.pauseVideo) {
             player.pauseVideo();
-            console.log("Comando: Pausar video.");
+            updateUnityStatus();
         } else {
-            console.warn("Comando: Pausar video - Reproductor no disponible.");
+            console.warn("JS: pauseVideo - Reproductor no disponible");
         }
     }
 
-    function seekTo(t) {
-        if (player) {
-            player.seekTo(t, true);
-            console.log("Comando: Ir al segundo " + t + ".");
+    function togglePlayPause() {
+        console.log("JS: Recibido comando TOGGLE");
+        if (!player) return;
+        
+        if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+            pauseVideo();
         } else {
-            console.warn("Comando: Ir al segundo - Reproductor no disponible.");
+            playVideo();
         }
     }
-</script>
+
+    // Función para verificar estado (usada por Unity)
+    function getPlayerStatus() {
+        return window.unityPlayerStatus;
+    }
+    </script>
   </body>
 </html>
