@@ -5,70 +5,115 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-    // Variables globales
-    var player;
-    var playerReady = false;
-    window.playerStatus = { ready: false };
+    // Variables globales con verificación de existencia
+    window.player = null;
+    window.playerReady = false;
     
-    // Función para actualizar estado
-    function updatePlayerStatus() {
-        window.playerStatus = {
-            ready: playerReady,
-            state: player ? player.getPlayerState() : -1,
-            time: player ? player.getCurrentTime() : 0
+    // Sistema de comunicación mejorado
+    if (!window.unityCom) {
+        window.unityCom = {
+            callbacks: {},
+            notify: function(msg) {
+                try {
+                    if (window.unityWebView && unityWebView.notify) {
+                        unityWebView.notify(msg);
+                    }
+                } catch(e) {
+                    console.error("Error en unityCom.notify:", e);
+                }
+            }
         };
-        console.log("JS: Estado actualizado:", window.playerStatus);
     }
 
     function onYouTubeIframeAPIReady() {
-        console.log("JS: YouTube API lista");
+        console.log("YouTube API lista - Inicializando reproductor...");
         
-        player = new YT.Player('player', {
-            videoId: 'dQw4w9WgXcQ',
-            playerVars: {
-                'controls': 0,
-                'enablejsapi': 1,
-                'autoplay': 0
-            },
-            events: {
-                'onReady': function(event) {
-                    console.log("JS: Reproductor listo");
-                    playerReady = true;
-                    updatePlayerStatus();
-                    
-                    // Notificar a Unity
-                    if (window.unityBridge) {
-                        unityBridge.notify("PLAYER_READY");
-                    }
+        try {
+            player = new YT.Player('player', {
+                videoId: 'dQw4w9WgXcQ',
+                playerVars: {
+                    'controls': 0,
+                    'enablejsapi': 1,
+                    'autoplay': 0,
+                    'origin': window.location.origin
                 },
-                'onStateChange': function(event) {
-                    updatePlayerStatus();
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
                 }
-            }
-        });
+            });
+        } catch(e) {
+            console.error("Error al crear reproductor:", e);
+            unityCom.notify("ERROR:" + e.message);
+        }
     }
 
-    // Función para Unity
-    function unityCommand(cmd, param) {
+    function onPlayerReady(event) {
+        console.log("Reproductor listo!");
+        window.playerReady = true;
+        
+        // Notificar a Unity
+        unityCom.notify("PLAYER_READY");
+        
+        // Actualizar estado inicial
+        updateUnityStatus();
+    }
+
+    function onPlayerStateChange(event) {
+        updateUnityStatus();
+    }
+
+    function onPlayerError(event) {
+        console.error("Error en reproductor:", event.data);
+        unityCom.notify("PLAYER_ERROR:" + event.data);
+    }
+
+    function updateUnityStatus() {
         try {
-            if (!player) return "Player not ready";
+            var status = {
+                ready: window.playerReady,
+                state: player ? player.getPlayerState() : -1,
+                time: player ? player.getCurrentTime() : 0,
+                duration: player ? player.getDuration() : 0
+            };
             
-            switch(cmd) {
-                case 'play': 
-                    player.playVideo();
-                    return "Playing";
-                case 'pause':
-                    player.pauseVideo();
-                    return "Paused";
-                case 'toggle':
-                    return player.getPlayerState() === 1 ? 
-                        (player.pauseVideo(), "Paused") : 
-                        (player.playVideo(), "Playing");
-                default:
-                    return "Unknown command";
+            if (window.unityCom) {
+                window.unityCom.lastStatus = status;
+            }
+            
+            // Notificar a Unity si hay cambios importantes
+            if (status.state === YT.PlayerState.PLAYING) {
+                unityCom.notify("PLAYING:" + status.time);
             }
         } catch(e) {
-            return "Error: " + e.message;
+            console.error("Error en updateUnityStatus:", e);
+        }
+    }
+
+    // Función para llamadas desde Unity
+    function handleUnityCommand(cmd) {
+        try {
+            if (!player) return "PLAYER_NOT_READY";
+            
+            switch(cmd) {
+                case 'play':
+                    player.playVideo();
+                    return "PLAYING";
+                case 'pause':
+                    player.pauseVideo();
+                    return "PAUSED";
+                case 'status':
+                    return JSON.stringify({
+                        ready: playerReady,
+                        state: player.getPlayerState(),
+                        time: player.getCurrentTime()
+                    });
+                default:
+                    return "UNKNOWN_COMMAND";
+            }
+        } catch(e) {
+            return "ERROR:" + e.message;
         }
     }
     </script>
