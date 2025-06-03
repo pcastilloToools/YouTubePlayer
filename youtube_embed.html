@@ -51,16 +51,16 @@
         }, 1000);
 
         function onYouTubeIframeAPIReady() {
-    console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
-    player = new YT.Player('player', {
-        videoId: getVideoIdFromURL(),
-        playerVars: {
-            'autoplay': 0,
-            'controls': 1,
-            'rel': 0,
-            'modestbranding': 1,
-            'playsinline': 1,
-            'enablejsapi': 1
+            console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
+            player = new YT.Player('player', {
+            videoId: getVideoIdFromURL(),
+            playerVars: {
+               'autoplay': 0,
+               'controls': 1,
+               'rel': 0,
+               'modestbranding': 1,
+               'playsinline': 1,
+               'enablejsapi': 1
         },
         events: {
             'onReady': onPlayerReady,
@@ -70,11 +70,10 @@
     });
 }
 
-function getVideoIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('videoId') || 'dQw4w9WgXcQ';
-}
-
+        function getVideoIdFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('videoId') || 'dQw4w9WgXcQ';
+        }
 
         function onPlayerReady(event) {
             playerReady = true;
@@ -100,15 +99,12 @@ function getVideoIdFromURL() {
             }
         }
 
-        function seekToTime(seconds) {
-    if (player && playerReady) {
-        player.seekTo(seconds, true);
-        console.log("Saltando a", seconds, "segundos");
-    }
-}
-
-
-        // ... (mantén las otras funciones de control igual)
+         function seekToTime(seconds) {
+             if (player && playerReady) {
+                 player.seekTo(seconds, true);
+                 console.log("Saltando a", seconds, "segundos");
+            }
+        }
 
         // Carga la API de YouTube
         var tag = document.createElement('script');
