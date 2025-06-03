@@ -25,18 +25,8 @@
     <div id="player"></div>
 
     <script>
-        // Función para enviar mensajes a Unity
-        // Este bridge se inyecta desde Unity C# para asegurar su existencia y funcionalidad
-        function sendMessageToUnity(message) {
-            if (window.unityBridge && window.unityBridge.notify) {
-                window.unityBridge.notify(message);
-            } else {
-                console.warn("UnityBridge no está disponible para enviar el mensaje:", message);
-            }
-        }
-
         var player;
-        var playerReady = false;
+        var playerReady = false; // Variable para controlar si el reproductor de YT está listo
 
         // Esta función se llama automáticamente cuando la API de IFrame de YouTube está lista.
         function onYouTubeIframeAPIReady() {
@@ -48,27 +38,56 @@
                     'controls': 1,
                     'rel': 0,
                     'modestbranding': 1,
-                    'playsinline': 1 // Importante para iOS
+                    'playsinline': 1
                 },
                 events: {
-                    'onReady': function (event) {
-                        playerReady = true;
-                        console.log("Reproductor listo");
-                        // Notificar a Unity que el reproductor está listo
-                        sendMessageToUnity("PLAYER_READY");
-                    },
-                    'onStateChange': function (event) {
-                        console.log("Estado del reproductor:", event.data);
-                        // Notificar a Unity sobre cambios de estado
-                        sendMessageToUnity("PLAYER_STATE_CHANGE:" + event.data);
-                    },
-                    'onError': function (event) {
-                        console.error("Error del reproductor de YouTube:", event.data);
-                        sendMessageToUnity("PLAYER_ERROR:" + event.data);
-                    }
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
                 }
             });
         }
+
+        function onPlayerReady(event) {
+            playerReady = true;
+            console.log("Reproductor listo");
+            // Llamar a la nueva función que esperará a UnityBridge
+            sendPlayerReadyToUnityWithRetry();
+        }
+
+        function onPlayerStateChange(event) {
+            console.log("Estado del reproductor:", event.data);
+            sendMessageToUnity("PLAYER_STATE_CHANGE:" + event.data);
+        }
+
+        function onPlayerError(event) {
+            console.error("Error del reproductor de YouTube:", event.data);
+            sendMessageToUnity("PLAYER_ERROR:" + event.data);
+        }
+
+        // Nueva función para enviar mensajes a Unity con reintento
+        // Esto es CRUCIAL para que el HTML espere a que Unity inyecte el bridge
+        function sendMessageToUnity(message) {
+            // console.log("Intentando enviar a Unity:", message); // Depuración
+            if (window.unityBridge && window.unityBridge.notify) {
+                window.unityBridge.notify(message);
+            } else {
+                console.warn("UnityBridge no está disponible para enviar el mensaje:", message);
+                // Si el mensaje es crítico (como PLAYER_READY), podemos reintentar
+                if (message === "PLAYER_READY") {
+                     // Solo reintentar si el bridge no está disponible
+                    setTimeout(function() {
+                        sendMessageToUnity(message); // Reintentar después de un corto tiempo
+                    }, 200); // Reintentar cada 200ms
+                }
+            }
+        }
+
+        // Función específica para PLAYER_READY que usa el mecanismo de reintento
+        function sendPlayerReadyToUnityWithRetry() {
+            sendMessageToUnity("PLAYER_READY"); // Esto activará el reintento si no está listo
+        }
+
 
         // Funciones que Unity puede llamar para controlar el reproductor
         function playVideo() {
@@ -136,7 +155,6 @@
 
         // Cargar la API de IFrame de YouTube
         var tag = document.createElement('script');
-        // ¡¡CORRECCIÓN CRÍTICA AQUÍ!!
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
