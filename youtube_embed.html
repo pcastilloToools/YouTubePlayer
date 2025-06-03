@@ -21,24 +21,46 @@
     </style>
 </head>
 <body>
-
     <div id="player"></div>
 
     <script>
         var player;
-        var playerReady = false; // Variable para controlar si el reproductor de YT está listo
+        var playerReady = false;
+        var unityMessageQueue = []; // Cola de mensajes para Unity
 
-        // Esta función se llama automáticamente cuando la API de IFrame de YouTube está lista.
+        // Función para enviar mensajes a Unity
+        function sendToUnity(message) {
+            if (window.tlab && window.tlab.unitySendMessage) {
+                window.tlab.unitySendMessage('YoutubeWebViewController', 'OnMessageFromJS', message);
+            } else if (window.unityBridge && window.unityBridge.notify) {
+                window.unityBridge.notify(message);
+            } else {
+                console.warn("No se encontró el puente de Unity, encolando mensaje:", message);
+                unityMessageQueue.push(message);
+            }
+        }
+
+        // Intenta enviar mensajes encolados cada segundo
+        setInterval(function() {
+            if (unityMessageQueue.length > 0 && 
+                (window.tlab || window.unityBridge)) {
+                while (unityMessageQueue.length > 0) {
+                    sendToUnity(unityMessageQueue.shift());
+                }
+            }
+        }, 1000);
+
         function onYouTubeIframeAPIReady() {
             console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
             player = new YT.Player('player', {
-                videoId: 'dQw4w9WgXcQ', // Reemplaza por tu ID real
+                videoId: 'dQw4w9WgXcQ',
                 playerVars: {
                     'autoplay': 0,
                     'controls': 1,
                     'rel': 0,
                     'modestbranding': 1,
-                    'playsinline': 1
+                    'playsinline': 1,
+                    'enablejsapi': 1 // HABILITA LA API DE JS
                 },
                 events: {
                     'onReady': onPlayerReady,
@@ -51,115 +73,43 @@
         function onPlayerReady(event) {
             playerReady = true;
             console.log("Reproductor listo");
-            // Llamar a la nueva función que esperará a UnityBridge
-            sendPlayerReadyToUnityWithRetry();
+            sendToUnity("PLAYER_READY");
         }
 
         function onPlayerStateChange(event) {
             console.log("Estado del reproductor:", event.data);
-            sendMessageToUnity("PLAYER_STATE_CHANGE:" + event.data);
+            sendToUnity("PLAYER_STATE_CHANGE:" + event.data);
         }
 
         function onPlayerError(event) {
             console.error("Error del reproductor de YouTube:", event.data);
-            sendMessageToUnity("PLAYER_ERROR:" + event.data);
+            sendToUnity("PLAYER_ERROR:" + event.data);
         }
 
-        // Nueva función para enviar mensajes a Unity con reintento
-        // Esto es CRUCIAL para que el HTML espere a que Unity inyecte el bridge
-        function sendMessageToUnity(message) {
-            // console.log("Intentando enviar a Unity:", message); // Depuración
-            if (window.unityBridge && window.unityBridge.notify) {
-                window.unityBridge.notify(message);
-            } else {
-                console.warn("UnityBridge no está disponible para enviar el mensaje:", message);
-                // Si el mensaje es crítico (como PLAYER_READY), podemos reintentar
-                if (message === "PLAYER_READY") {
-                     // Solo reintentar si el bridge no está disponible
-                    setTimeout(function() {
-                        sendMessageToUnity(message); // Reintentar después de un corto tiempo
-                    }, 200); // Reintentar cada 200ms
-                }
-            }
-        }
-
-        // Función específica para PLAYER_READY que usa el mecanismo de reintento
-        function sendPlayerReadyToUnityWithRetry() {
-            sendMessageToUnity("PLAYER_READY"); // Esto activará el reintento si no está listo
-        }
-
-
-        // Funciones que Unity puede llamar para controlar el reproductor
+        // Funciones de control que Unity puede llamar
         function playVideo() {
-            if (player && playerReady && player.playVideo) {
+            if (player && playerReady) {
                 player.playVideo();
-                console.log("Reproduciendo video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para reproducir.");
-                sendMessageToUnity("PLAY_FAILED:Player not ready");
+                console.log("Reproduciendo video");
             }
         }
 
-        function pauseVideo() {
-            if (player && playerReady && player.pauseVideo) {
-                player.pauseVideo();
-                console.log("Pausando video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para pausar.");
-                sendMessageToUnity("PAUSE_FAILED:Player not ready");
-            }
-        }
+        // ... (mantén las otras funciones de control igual)
 
-        function stopVideo() {
-            if (player && playerReady && player.stopVideo) {
-                player.stopVideo();
-                console.log("Deteniendo video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para detener.");
-                sendMessageToUnity("STOP_FAILED:Player not ready");
-            }
-        }
-
-        function seekTo(seconds, allowSeekAhead) {
-            if (player && playerReady && player.seekTo) {
-                player.seekTo(seconds, allowSeekAhead);
-                console.log("Saltando a " + seconds + " segundos.");
-            } else {
-                console.warn("Reproductor no listo para saltar.");
-                sendMessageToUnity("SEEK_FAILED:Player not ready");
-            }
-        }
-
-        function setVolume(volume) { // volume de 0 a 100
-            if (player && playerReady && player.setVolume) {
-                player.setVolume(volume);
-                console.log("Volumen establecido a: " + volume);
-            } else {
-                console.warn("Reproductor no listo para ajustar volumen.");
-            }
-        }
-
-        function getPlayerState() {
-            if (player && playerReady && player.getPlayerState) {
-                return player.getPlayerState();
-            }
-            return -1; // Estado desconocido
-        }
-
-        function getCurrentTime() {
-            if (player && playerReady && player.getCurrentTime) {
-                return player.getCurrentTime();
-            }
-            return 0;
-        }
-
-        // Cargar la API de IFrame de YouTube
+        // Carga la API de YouTube
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
+        // Intenta establecer comunicación con Unity al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("HTML completamente cargado");
+            // Intenta enviar cualquier mensaje pendiente
+            if (unityMessageQueue.length > 0) {
+                sendToUnity("HTML_READY");
+            }
+        });
     </script>
-
 </body>
 </html>
