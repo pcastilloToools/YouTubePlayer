@@ -1,158 +1,74 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>YT Player para Unity</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            background-color: black;
-            overflow: hidden;
-            height: 100%;
-            width: 100%;
-        }
-        #player {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="player"></div>
-
+  <head>
+    <meta charset="utf-8" />
+    <title>Youtube IFrame API</title>
     <script>
-        // Función para enviar mensajes a Unity
-        // Este bridge se inyecta desde Unity C# para asegurar su existencia y funcionalidad
-        function sendMessageToUnity(message) {
-            if (window.unityBridge && window.unityBridge.notify) {
-                window.unityBridge.notify(message);
-            } else {
-                console.warn("UnityBridge no está disponible para enviar el mensaje:", message);
-            }
-        }
+      // Stub para evitar errores si UnityBridge no está disponible todavía
+      if (!window.UnityBridge) {
+        console.warn("UnityBridge no está disponible. Usando stub temporal.");
+        window.UnityBridge = {
+          onMessage: function (msg) {
+            console.log("UnityBridge stub recibió:", msg);
+          },
+        };
+      }
 
-        var player;
-        var playerReady = false;
+      let player;
+      let isPlayerReady = false;
 
-        // Esta función se llama automáticamente cuando la API de IFrame de YouTube está lista.
-        function onYouTubeIframeAPIReady() {
-            console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
-            player = new YT.Player('player', {
-                videoId: 'dQw4w9WgXcQ', // Reemplaza por tu ID real
-                playerVars: {
-                    'autoplay': 0,
-                    'controls': 1,
-                    'rel': 0,
-                    'modestbranding': 1,
-                    'playsinline': 1 // Importante para iOS
-                },
-                events: {
-                    'onReady': function (event) {
-                        playerReady = true;
-                        console.log("Reproductor listo");
-                        // Notificar a Unity que el reproductor está listo
-                        waitForUnityBridgeAndSendReady();
-                    },
-                    'onStateChange': function (event) {
-                        console.log("Estado del reproductor:", event.data);
-                        // Notificar a Unity sobre cambios de estado
-                        sendMessageToUnity("PLAYER_STATE_CHANGE:" + event.data);
-                    },
-                    'onError': function (event) {
-                        console.error("Error del reproductor de YouTube:", event.data);
-                        sendMessageToUnity("PLAYER_ERROR:" + event.data);
-                    },
-                    
-                }
-            });
-        }
-        function waitForUnityBridgeAndSendReady() {
-    const interval = setInterval(() => {
-        if (window.UnityBridge && typeof window.UnityBridge.onMessage === 'function') {
-            sendMessageToUnity("PLAYER_READY");
-            clearInterval(interval);
+      function onYouTubeIframeAPIReady() {
+        console.log("✅ API de YouTube lista.");
+        player = new YT.Player("player", {
+          height: "390",
+          width: "640",
+          videoId: "M7lc1UVf-VE", // Puedes cambiar este ID
+          events: {
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange,
+          },
+        });
+      }
+
+      function onPlayerReady(event) {
+        console.log("✅ Reproductor listo.");
+        isPlayerReady = true;
+
+        // Play automático cuando esté listo
+        event.target.playVideo();
+
+        // Avisamos a Unity
+        postMessageToUnity("PLAYER_READY");
+      }
+
+      function onPlayerStateChange(event) {
+        console.log("🎬 Estado del reproductor:", event.data);
+      }
+
+      function playVideo() {
+        if (isPlayerReady && player) player.playVideo();
+      }
+
+      function pauseVideo() {
+        if (isPlayerReady && player) player.pauseVideo();
+      }
+
+      // Método seguro para comunicarse con Unity
+      function postMessageToUnity(message) {
+        if (window.UnityBridge && typeof window.UnityBridge.onMessage === "function") {
+          window.UnityBridge.onMessage(message);
         } else {
-            console.log("Esperando a que UnityBridge esté disponible...");
+          console.warn("UnityBridge no está disponible para enviar el mensaje:", message);
         }
-    }, 100); // checkea cada 100ms
-}
+      }
 
-        // Funciones que Unity puede llamar para controlar el reproductor
-        function playVideo() {
-            if (player && playerReady && player.playVideo) {
-                player.playVideo();
-                console.log("Reproduciendo video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para reproducir.");
-                sendMessageToUnity("PLAY_FAILED:Player not ready");
-            }
-        }
-
-        function pauseVideo() {
-            if (player && playerReady && player.pauseVideo) {
-                player.pauseVideo();
-                console.log("Pausando video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para pausar.");
-                sendMessageToUnity("PAUSE_FAILED:Player not ready");
-            }
-        }
-
-        function stopVideo() {
-            if (player && playerReady && player.stopVideo) {
-                player.stopVideo();
-                console.log("Deteniendo video desde función JS");
-            } else {
-                console.warn("Reproductor no listo para detener.");
-                sendMessageToUnity("STOP_FAILED:Player not ready");
-            }
-        }
-
-        function seekTo(seconds, allowSeekAhead) {
-            if (player && playerReady && player.seekTo) {
-                player.seekTo(seconds, allowSeekAhead);
-                console.log("Saltando a " + seconds + " segundos.");
-            } else {
-                console.warn("Reproductor no listo para saltar.");
-                sendMessageToUnity("SEEK_FAILED:Player not ready");
-            }
-        }
-
-        function setVolume(volume) { // volume de 0 a 100
-            if (player && playerReady && player.setVolume) {
-                player.setVolume(volume);
-                console.log("Volumen establecido a: " + volume);
-            } else {
-                console.warn("Reproductor no listo para ajustar volumen.");
-            }
-        }
-
-        function getPlayerState() {
-            if (player && playerReady && player.getPlayerState) {
-                return player.getPlayerState();
-            }
-            return -1; // Estado desconocido
-        }
-
-        function getCurrentTime() {
-            if (player && playerReady && player.getCurrentTime) {
-                return player.getCurrentTime();
-            }
-            return 0;
-        }
-
-        // Cargar la API de IFrame de YouTube
-        var tag = document.createElement('script');
-        // ¡¡CORRECCIÓN CRÍTICA AQUÍ!!
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
+      // Carga de la API de YouTube
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
     </script>
-
-</body>
+  </head>
+  <body>
+    <div id="player"></div>
+  </body>
 </html>
