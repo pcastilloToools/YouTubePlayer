@@ -4,25 +4,35 @@
     <meta charset="utf-8" />
     <title>Youtube IFrame API</title>
     <script>
-      // Stub para evitar errores si UnityBridge no está disponible todavía
-      if (!window.UnityBridge) {
-        console.warn("UnityBridge no está disponible. Usando stub temporal.");
-        window.UnityBridge = {
-          onMessage: function (msg) {
-            console.log("UnityBridge stub recibió:", msg);
-          },
-        };
-      }
-
       let player;
       let isPlayerReady = false;
+
+      // UnityBridge que Unity puede usar para enviar mensajes al HTML
+      window.UnityBridge = {
+        onMessage: function (msg) {
+          console.log("📩 Mensaje recibido desde Unity:", msg);
+
+          // Aquí interpretamos los comandos enviados desde Unity
+          switch (msg) {
+            case "PLAY":
+              playVideo();
+              break;
+            case "PAUSE":
+              pauseVideo();
+              break;
+            default:
+              console.warn("⚠️ Comando no reconocido:", msg);
+              break;
+          }
+        }
+      };
 
       function onYouTubeIframeAPIReady() {
         console.log("✅ API de YouTube lista.");
         player = new YT.Player("player", {
           height: "390",
           width: "640",
-          videoId: "M7lc1UVf-VE", // Puedes cambiar este ID
+          videoId: "M7lc1UVf-VE",
           events: {
             onReady: onPlayerReady,
             onStateChange: onPlayerStateChange,
@@ -34,10 +44,10 @@
         console.log("✅ Reproductor listo.");
         isPlayerReady = true;
 
-        // Play automático cuando esté listo
+        // Auto-play
         event.target.playVideo();
 
-        // Avisamos a Unity
+        // Enviar mensaje a Unity
         postMessageToUnity("PLAYER_READY");
       }
 
@@ -46,23 +56,28 @@
       }
 
       function playVideo() {
-        if (isPlayerReady && player) player.playVideo();
-      }
-
-      function pauseVideo() {
-        if (isPlayerReady && player) player.pauseVideo();
-      }
-
-      // Método seguro para comunicarse con Unity
-      function postMessageToUnity(message) {
-        if (window.UnityBridge && typeof window.UnityBridge.onMessage === "function") {
-          window.UnityBridge.onMessage(message);
-        } else {
-          console.warn("UnityBridge no está disponible para enviar el mensaje:", message);
+        if (isPlayerReady && player) {
+          player.playVideo();
+          console.log("▶️ Play desde JS");
         }
       }
 
-      // Carga de la API de YouTube
+      function pauseVideo() {
+        if (isPlayerReady && player) {
+          player.pauseVideo();
+          console.log("⏸️ Pause desde JS");
+        }
+      }
+
+      function postMessageToUnity(message) {
+        if (window.Unity && typeof window.Unity.call === "function") {
+          window.Unity.call(message);
+        } else {
+          console.warn("⚠️ Unity.call no está disponible para enviar:", message);
+        }
+      }
+
+      // Cargar la API de YouTube
       const tag = document.createElement("script");
       tag.src = "https://www.youtube.com/iframe_api";
       document.head.appendChild(tag);
