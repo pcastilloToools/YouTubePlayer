@@ -55,7 +55,7 @@
                         playerReady = true;
                         console.log("Reproductor listo");
                         // Notificar a Unity que el reproductor está listo
-                        sendMessageToUnity("PLAYER_READY");
+                        waitForUnityBridgeAndSendReady();
                     },
                     'onStateChange': function (event) {
                         console.log("Estado del reproductor:", event.data);
@@ -65,10 +65,21 @@
                     'onError': function (event) {
                         console.error("Error del reproductor de YouTube:", event.data);
                         sendMessageToUnity("PLAYER_ERROR:" + event.data);
-                    }
+                    },
+                    
                 }
             });
         }
+        function waitForUnityBridgeAndSendReady() {
+    const interval = setInterval(() => {
+        if (window.UnityBridge && typeof window.UnityBridge.onMessage === 'function') {
+            sendMessageToUnity("PLAYER_READY");
+            clearInterval(interval);
+        } else {
+            console.log("Esperando a que UnityBridge esté disponible...");
+        }
+    }, 100); // checkea cada 100ms
+}
 
         // Funciones que Unity puede llamar para controlar el reproductor
         function playVideo() {
