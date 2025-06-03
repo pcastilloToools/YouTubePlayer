@@ -100,6 +100,14 @@ function getVideoIdFromURL() {
             }
         }
 
+        function seekToTime(seconds) {
+    if (player && playerReady) {
+        player.seekTo(seconds, true);
+        console.log("Saltando a", seconds, "segundos");
+    }
+}
+
+
         // ... (mantén las otras funciones de control igual)
 
         // Carga la API de YouTube
