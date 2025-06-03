@@ -51,24 +51,30 @@
         }, 1000);
 
         function onYouTubeIframeAPIReady() {
-            console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
-            player = new YT.Player('player', {
-                videoId: 'dQw4w9WgXcQ',
-                playerVars: {
-                    'autoplay': 0,
-                    'controls': 1,
-                    'rel': 0,
-                    'modestbranding': 1,
-                    'playsinline': 1,
-                    'enablejsapi': 1 // HABILITA LA API DE JS
-                },
-                events: {
-                    'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange,
-                    'onError': onPlayerError
-                }
-            });
+    console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
+    player = new YT.Player('player', {
+        videoId: getVideoIdFromURL(),
+        playerVars: {
+            'autoplay': 0,
+            'controls': 1,
+            'rel': 0,
+            'modestbranding': 1,
+            'playsinline': 1,
+            'enablejsapi': 1
+        },
+        events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange,
+            'onError': onPlayerError
         }
+    });
+}
+
+function getVideoIdFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('videoId') || 'dQw4w9WgXcQ';
+}
+
 
         function onPlayerReady(event) {
             playerReady = true;
