@@ -106,6 +106,15 @@
             }
         }
 
+        function reportCurrentTime() {
+             if (player && playerReady) {
+             const current = player.getCurrentTime();
+             console.log("🟡 Tiempo actual reportado: " + current);
+             return current;
+          }
+             return -1;
+        }
+
         // Carga la API de YouTube
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
