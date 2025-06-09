@@ -107,10 +107,12 @@
         }
 
         function pauseVideo() {
-            if (player && playerReady) {
-                player.pauseVideo();
-                console.log("Pausando video");
-        }
+           if (player && playerReady) {
+               player.pauseVideo(); // corregido también el typo
+               console.log("Pausando video");
+           }
+       }
+
 
         window.reportCurrentTime = function() {    
          if (player && playerReady) {    
