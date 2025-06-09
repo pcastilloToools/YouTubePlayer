@@ -113,23 +113,21 @@
         }
 
         window.reportCurrentTime = function() {    
-    if (player && playerReady) {    
-        const current = Math.floor(player.getCurrentTime());    
-        console.log("🟡 Tiempo actual:", current);    
+         if (player && playerReady) {    
+         const current = Math.floor(player.getCurrentTime());    
+         console.log("🟡 Tiempo actual:", current);    
             
         // Usar el puente de comunicación de TLabWebView en lugar de Unity.call  
         if (typeof window.unityBridge !== 'undefined' && window.unityBridge.notify) {  
-            window.unityBridge.notify('CURRENT_TIME:' + current.toString());  
-        } else if (typeof window.tlab !== 'undefined' && window.tlab.unitySendMessage) {  
-            window.tlab.unitySendMessage('YoutubeWebViewController', 'OnCurrentTimeReceived', current.toString());  
-        }  
+             window.unityBridge.notify('CURRENT_TIME:' + current.toString());  
+          } else if (typeof window.tlab !== 'undefined' && window.tlab.unitySendMessage) {  
+             window.tlab.unitySendMessage('YoutubeWebViewController', 'OnCurrentTimeReceived', current.toString());  
+          }  
           
         return current;    
-    }    
+         }    
     return -1;    
 }
-
-
 
         // Carga la API de YouTube
         var tag = document.createElement('script');
