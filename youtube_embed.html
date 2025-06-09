@@ -106,6 +106,12 @@
             }
         }
 
+        function pauseVideo() {
+            if (player && playerReady) {
+                player.pasueVideo();
+                console.log("Pausando video");
+        }
+
         window.reportCurrentTime = function() {    
     if (player && playerReady) {    
         const current = Math.floor(player.getCurrentTime());    
