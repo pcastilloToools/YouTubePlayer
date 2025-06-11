@@ -112,7 +112,23 @@
                console.log("Pausando video");
            }
        }
-
+        
+        function adelanteVideo() {
+           if (player && playerReady) {
+               const currentTime = player.getCurrentTime();
+               const newTime = currentTime + 5;
+               player.seekTo(newTime, true);
+               console.log("Avanzando video 5 segundos a", newTime, "segundos");
+          }
+      }
+        function atrasVideo() {
+           if (player && playerReady) {
+               const currentTime = player.getCurrentTime();
+               const newTime = currentTime - 5;
+               player.seekTo(newTime, true);
+               console.log("Retrocediendo video 5 segundos a", newTime, "segundos");
+          }
+      }
 
         window.reportCurrentTime = function() {    
          if (player && playerReady) {    
