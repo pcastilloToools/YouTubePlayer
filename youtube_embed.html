@@ -99,29 +99,30 @@
             }
         }
 
-         function seekToTime(seconds) {
+        function seekToTime(seconds) {
              if (player && playerReady) {
                  player.seekTo(seconds, true);
                  console.log("Saltando a", seconds, "segundos");
             }
         }
 
-        function pauseVideo() {
+       function pauseVideo() {
            if (player && playerReady) {
                player.pauseVideo(); // corregido también el typo
                console.log("Pausando video");
            }
        }
         
-        function adelanteVideo() {
-           if (player && playerReady) {
+      function adelanteVideo() {
+          if (player && playerReady) {
                const currentTime = player.getCurrentTime();
                const newTime = currentTime + 5;
                player.seekTo(newTime, true);
                console.log("Avanzando video 5 segundos a", newTime, "segundos");
           }
-      }
-        function atrasVideo() {
+        }
+
+       function atrasVideo() {
            if (player && playerReady) {
                const currentTime = player.getCurrentTime();
                const newTime = currentTime - 5;
