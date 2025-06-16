@@ -138,10 +138,8 @@
                 const current = Math.floor(player.getCurrentTime());
                 console.log("🟡 Tiempo actual:", current);
 
-                //Puente de comunicación de TLabWebView
-                if (typeof window.unityBridge !== 'undefined' && window.unityBridge.notify) {
-                    window.unityBridge.notify('CURRENT_TIME:' + current.toString());
-                } else if (typeof window.tlab !== 'undefined' && window.tlab.unitySendMessage) {
+                // Enviar tiempo directamente al método esperado en C#
+                if (typeof window.tlab !== 'undefined' && window.tlab.unitySendMessage) {
                     window.tlab.unitySendMessage('YoutubeWebViewController', 'OnCurrentTimeReceived', current.toString());
                 }
 
