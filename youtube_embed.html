@@ -12,9 +12,11 @@
             height: 100%;
             width: 100%;
         }
+
         #player {
             position: absolute;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
         }
@@ -41,8 +43,8 @@
         }
 
         // Intenta enviar mensajes encolados cada segundo
-        setInterval(function() {
-            if (unityMessageQueue.length > 0 && 
+        setInterval(function () {
+            if (unityMessageQueue.length > 0 &&
                 (window.tlab || window.unityBridge)) {
                 while (unityMessageQueue.length > 0) {
                     sendToUnity(unityMessageQueue.shift());
@@ -53,22 +55,22 @@
         function onYouTubeIframeAPIReady() {
             console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
             player = new YT.Player('player', {
-            videoId: getVideoIdFromURL(),
-            playerVars: {
-               'autoplay': 0,
-               'controls': 1,
-               'rel': 0,
-               'modestbranding': 1,
-               'playsinline': 1,
-               'enablejsapi': 1
-        },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange,
-            'onError': onPlayerError
+                videoId: getVideoIdFromURL(),
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 1,
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'playsinline': 1,
+                    'enablejsapi': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
         }
-    });
-}
 
         function getVideoIdFromURL() {
             const params = new URLSearchParams(window.location.search);
@@ -100,53 +102,53 @@
         }
 
         function seekToTime(seconds) {
-             if (player && playerReady) {
-                 player.seekTo(seconds, true);
-                 console.log("Saltando a", seconds, "segundos");
+            if (player && playerReady) {
+                player.seekTo(seconds, true);
+                console.log("Saltando a", seconds, "segundos");
             }
         }
 
-       function pauseVideo() {
-           if (player && playerReady) {
-               player.pauseVideo(); // corregido también el typo
-               console.log("Pausando video");
-           }
-       }
-        
-      function adelanteVideo() {
-          if (player && playerReady) {
-               const currentTime = player.getCurrentTime();
-               const newTime = currentTime + 5;
-               player.seekTo(newTime, true);
-               console.log("Avanzando video 5 segundos a", newTime, "segundos");
-          }
+        function pauseVideo() {
+            if (player && playerReady) {
+                player.pauseVideo(); // corregido también el typo
+                console.log("Pausando video");
+            }
         }
 
-       function atrasVideo() {
-           if (player && playerReady) {
-               const currentTime = player.getCurrentTime();
-               const newTime = currentTime - 5;
-               player.seekTo(newTime, true);
-               console.log("Retrocediendo video 5 segundos a", newTime, "segundos");
-          }
-      }
+        function adelanteVideo() {
+            if (player && playerReady) {
+                const currentTime = player.getCurrentTime();
+                const newTime = currentTime + 5;
+                player.seekTo(newTime, true);
+                console.log("Avanzando video 5 segundos a", newTime, "segundos");
+            }
+        }
 
-        window.reportCurrentTime = function() {    
-         if (player && playerReady) {    
-         const current = Math.floor(player.getCurrentTime());    
-         console.log("🟡 Tiempo actual:", current);    
-            
-        // Usar el puente de comunicación de TLabWebView en lugar de Unity.call  
-        if (typeof window.unityBridge !== 'undefined' && window.unityBridge.notify) {  
-             window.unityBridge.notify('CURRENT_TIME:' + current.toString());  
-          } else if (typeof window.tlab !== 'undefined' && window.tlab.unitySendMessage) {  
-             window.tlab.unitySendMessage('YoutubeWebViewController', 'OnCurrentTimeReceived', current.toString());  
-          }  
-          
-        return current;    
-         }    
-    return -1;    
-}
+        function atrasVideo() {
+            if (player && playerReady) {
+                const currentTime = player.getCurrentTime();
+                const newTime = currentTime - 5;
+                player.seekTo(newTime, true);
+                console.log("Retrocediendo video 5 segundos a", newTime, "segundos");
+            }
+        }
+
+        window.reportCurrentTime = function () {
+            if (player && playerReady) {
+                const current = Math.floor(player.getCurrentTime());
+                console.log("🟡 Tiempo actual:", current);
+
+                //Puente de comunicación de TLabWebView
+                if (typeof window.unityBridge !== 'undefined' && window.unityBridge.notify) {
+                    window.unityBridge.notify('CURRENT_TIME:' + current.toString());
+                } else if (typeof window.tlab !== 'undefined' && window.tlab.unitySendMessage) {
+                    window.tlab.unitySendMessage('YoutubeWebViewController', 'OnCurrentTimeReceived', current.toString());
+                }
+
+                return current;
+            }
+            return -1;
+        }
 
         // Carga la API de YouTube
         var tag = document.createElement('script');
@@ -155,7 +157,7 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         // Intenta establecer comunicación con Unity al cargar
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             console.log("HTML completamente cargado");
             // Intenta enviar cualquier mensaje pendiente
             if (unityMessageQueue.length > 0) {
