@@ -31,23 +31,47 @@
         var unityMessageQueue = []; // Cola de mensajes para Unity
 
         // Función para enviar mensajes a Unity
+        //function sendToUnity(message) {
+        //    if (window.tlab && window.tlab.unitySendMessage) {
+        //        window.tlab.unitySendMessage('YoutubeWebViewController', 'OnMessageFromJS', message);
+        //    } else if (window.unityBridge && window.unityBridge.notify) {
+        //        window.unityBridge.notify(message);
+        //    } else {
+        //        console.warn("No se encontró el puente de Unity, encolando mensaje:", message);
+        //        unityMessageQueue.push(message);
+        //    }
+        //}
+
         function sendToUnity(message) {
             if (window.tlab && window.tlab.unitySendMessage) {
-                window.tlab.unitySendMessage('YoutubeWebViewController', 'OnMessageFromJS', message);
-            } else if (window.unityBridge && window.unityBridge.notify) {
-                window.unityBridge.notify(message);
+                try {
+                    window.tlab.unitySendMessage('YoutubeWebViewController', 'OnMessageFromJS', message);
+                } catch (e) {
+                    console.warn("No se encontró el GameObject en Unity, encolando:", message);
+                    unityMessageQueue.push(message);
+                }
             } else {
-                console.warn("No se encontró el puente de Unity, encolando mensaje:", message);
                 unityMessageQueue.push(message);
             }
         }
 
         // Intenta enviar mensajes encolados cada segundo
+        //setInterval(function () {
+        //    if (unityMessageQueue.length > 0 &&
+        //        (window.tlab || window.unityBridge)) {
+        //        while (unityMessageQueue.length > 0) {
+        //            sendToUnity(unityMessageQueue.shift());
+        //        }
+        //    }
+        //}, 1000);
+
         setInterval(function () {
-            if (unityMessageQueue.length > 0 &&
-                (window.tlab || window.unityBridge)) {
-                while (unityMessageQueue.length > 0) {
-                    sendToUnity(unityMessageQueue.shift());
+            if (unityMessageQueue.length > 0) {
+                const queueCopy = [...unityMessageQueue];
+                unityMessageQueue = [];
+
+                for (let msg of queueCopy) {
+                    sendToUnity(msg);
                 }
             }
         }, 1000);
