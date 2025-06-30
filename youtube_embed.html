@@ -29,33 +29,13 @@
         var player;
         var playerReady = false;
         var unityMessageQueue = []; // Cola de mensajes para Unity
-        let unityIsReady = false;
-
-        //function sendToUnity(message) {
-        //    if (window.tlab && window.tlab.unitySendMessage) {
-        //        try {
-        //            window.tlab.unitySendMessage('YoutubeWebViewController', 'OnMessageFromJS', message);
-        //        } catch (e) {
-        //            console.warn("No se encontró el GameObject en Unity, encolando:", message);
-        //            unityMessageQueue.push(message);
-        //        }
-        //    } else {
-        //        unityMessageQueue.push(message);
-        //    }
-        //}
 
         function sendToUnity(message) {
-            if (!unityIsReady) {
-                console.warn("Unity aún no ha avisado que está listo. Encolando mensaje:", message);
-                unityMessageQueue.push(message);
-                return;
-            }
-
             if (window.tlab && window.tlab.unitySendMessage) {
                 try {
                     window.tlab.unitySendMessage('YoutubeWebViewController', 'OnMessageFromJS', message);
                 } catch (e) {
-                    console.warn("Error al enviar mensaje a Unity:", message, e);
+                    console.warn("No se encontró el GameObject en Unity, encolando:", message);
                     unityMessageQueue.push(message);
                 }
             } else {
@@ -63,19 +43,8 @@
             }
         }
 
-        //setInterval(function () {
-        //    if (unityMessageQueue.length > 0) {
-        //        const queueCopy = [...unityMessageQueue];
-        //        unityMessageQueue = [];
-
-        //        for (let msg of queueCopy) {
-        //            sendToUnity(msg);
-        //        }
-        //    }
-        //}, 1000);
-
         setInterval(function () {
-            if (unityIsReady && unityMessageQueue.length > 0) {
+            if (unityMessageQueue.length > 0) {
                 const queueCopy = [...unityMessageQueue];
                 unityMessageQueue = [];
 
@@ -84,7 +53,6 @@
                 }
             }
         }, 1000);
-
 
         function onYouTubeIframeAPIReady() {
             console.log("onYouTubeIframeAPIReady: API de YouTube lista.");
